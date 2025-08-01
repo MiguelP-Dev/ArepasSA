@@ -14,9 +14,12 @@ type ClientService struct {
 }
 
 func NewClientService(repo *repositories.ClientRepository) *ClientService {
+	v := validator.New()
+	_ = v.RegisterValidation("phone", utils.ValidatePhone)
+	
 	return &ClientService{
 		repo:      repo,
-		validator: validator.New(),
+		validator: v,
 	}
 }
 
@@ -46,27 +49,31 @@ func (s *ClientService) GetClient(id uint) (*models.Client, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *ClientService) GetAllClients(activeOnly bool) ([]models.Client, error) {
-	return s.repo.FindAll(activeOnly)
+func (s *ClientService) GetAllClients(activeOnly bool, search string) ([]models.Client, error) {
+	return s.repo.FindAll(activeOnly, search)
 }
 
-func (s *ClientService) AddComment(clientID uint, comment *models.ClientComment) error {
+func (s *ClientService) AddComment(comment *models.ClientComment) error {
+	// Validar que el cliente existe
+	if _, err := s.repo.FindByID(comment.ClientID); err != nil {
+		return err
+	}
+	
 	if err := s.validator.Struct(comment); err != nil {
 		return utils.TranslateValidationErrors(err)
 	}
-
-	// Verificar que el cliente existe
-	if _, err := s.repo.FindByID(clientID); err != nil {
-		return err
-	}
-
-	return s.repo.AddComment(clientID, comment)
+	
+	return s.repo.AddComment(comment)
 }
 
-func (s *ClientService) GetPreferences(clientID uint) ([]models.ClientComment, error) {
-	return s.repo.GetComments(clientID, true)
+func (s *ClientService) GetClientPreferences(clientID uint) ([]models.ClientComment, error) {
+	return s.repo.GetComments(clientID, "preference")
 }
 
-func (s *ClientService) GetAllComments(clientID uint) ([]models.ClientComment, error) {
-	return s.repo.GetComments(clientID, false)
+func (s *ClientService) GetAllClientComments(clientID uint) ([]models.ClientComment, error) {
+	return s.repo.GetComments(clientID, "")
+}
+
+func (s *ClientService) GetClientsWithPreferences() ([]models.Client, error) {
+	return s.repo.GetClientsWithPreferences()
 }
