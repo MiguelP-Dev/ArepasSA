@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"sales-app/internal/models"
+	"ArepasSA/internal/models"
 	"time"
 
 	"gorm.io/gorm"
